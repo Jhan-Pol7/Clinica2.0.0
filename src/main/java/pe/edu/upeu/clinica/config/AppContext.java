@@ -119,7 +119,9 @@ public class AppContext {
                 new MainConsultaController(getBean(IConsultaService.class),
                         getBean(ITriajeService.class), getBean(ICitaService.class)));
         registrar(MainTicketController.class,
-                new MainTicketController(getBean(ITicketService.class), getBean(IReporteService.class)));
+                new MainTicketController(getBean(ITicketService.class), getBean(IRecetaService.class),
+                        getBean(ICitaService.class), getBean(IConsultaService.class),
+                        getBean(IReporteService.class)));
         registrar(MainRecetaController.class,
                 new MainRecetaController(getBean(IRecetaService.class), getBean(IReporteService.class)));
 

@@ -2,22 +2,59 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="640.0" prefWidth="640.0" spacing="10.0"
+<VBox prefHeight="640.0" prefWidth="900.0" spacing="10.0"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="pe.edu.upeu.clinica.controller.MainTicketController">
    <padding><Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/></padding>
-   <Label fx:id="lblTitulo" style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Ticket de cita"/>
-   <TextArea fx:id="txtTicket" editable="false" prefHeight="460.0" wrapText="false"/>
+
+   <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Ver e Imprimir"/>
+   <Label fx:id="lblSeleccion" style="-fx-font-size: 13px; -fx-text-fill: #5dade2;"
+          text="Selecciona una fila de la tabla Citas o Recetas y usa los botones de abajo."/>
+
+   <HBox spacing="14.0" VBox.vgrow="ALWAYS">
+
+      <!-- Columna CITAS -->
+      <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+         <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Citas"/>
+         <TableView fx:id="tablaCitas" VBox.vgrow="ALWAYS">
+            <columns>
+               <TableColumn fx:id="colCitaTicket"    text="Ticket"      prefWidth="130"/>
+               <TableColumn fx:id="colCitaPaciente"  text="Paciente"    prefWidth="160"/>
+               <TableColumn fx:id="colCitaFecha"     text="Fecha"       prefWidth="90"/>
+               <TableColumn fx:id="colCitaHora"      text="Hora"        prefWidth="60"/>
+               <TableColumn fx:id="colCitaEstado"    text="Estado"      prefWidth="110"/>
+            </columns>
+            <VBox.vgrow><javafx.scene.layout.Priority fx:constant="ALWAYS"/></VBox.vgrow>
+         </TableView>
+      </VBox>
+
+      <!-- Columna RECETAS -->
+      <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+         <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Recetas"/>
+         <TableView fx:id="tablaRecetas" VBox.vgrow="ALWAYS">
+            <columns>
+               <TableColumn fx:id="colRecetaId"        text="N°"          prefWidth="50"/>
+               <TableColumn fx:id="colRecetaPaciente"  text="Paciente"    prefWidth="160"/>
+               <TableColumn fx:id="colRecetaDx"        text="Diagnóstico" prefWidth="160"/>
+               <TableColumn fx:id="colRecetaFecha"     text="Fecha"       prefWidth="120"/>
+            </columns>
+            <VBox.vgrow><javafx.scene.layout.Priority fx:constant="ALWAYS"/></VBox.vgrow>
+         </TableView>
+      </VBox>
+
+   </HBox>
+
+   <!-- Botones de acción -->
    <HBox spacing="8.0">
       <Button onAction="#onRecargar"     text="Recargar"/>
-      <Button onAction="#onCopiar"       text="Copiar"/>
-      <Button onAction="#onGuardarTxt"   text="Guardar .txt"/>
+      <Button onAction="#onImprimir"     style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" text="Imprimir (ESC/POS)"/>
       <Button onAction="#onVisorJasper"  style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-font-weight: bold;" text="Visor Jasper"/>
       <Button onAction="#onExportarPdf"  text="Exportar PDF"/>
-      <Button onAction="#onImprimir"     text="Imprimir (ESC/POS)"/>
    </HBox>
 </VBox>
