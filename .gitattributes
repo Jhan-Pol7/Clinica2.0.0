@@ -4,4 +4,5 @@
 *.sql        linguist-vendored=true
 *.properties linguist-vendored=true
 *.xml        linguist-vendored=true
+*.css        linguist-vendored=true
 *.md         linguist-documentation=true
