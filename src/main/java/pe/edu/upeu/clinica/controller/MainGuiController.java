@@ -61,6 +61,15 @@ public class MainGuiController {
             javafx.collections.FXCollections.observableArrayList("Español", "Inglés"));
     private final CustomMenuItem customItemIdioma = new CustomMenuItem(comboBoxIdioma);
 
+    // Menú "Cambiar Estilo" con ComboBox para elegir el tema visual de la app.
+    // El tema elegido se aplica a la Scene y se persiste en Preferences ("ESTILOX").
+    private final Menu menuEstilo = new Menu("Cambiar Estilo");
+    private final ComboBox<String> comboBoxEstilo = new ComboBox<>(
+            javafx.collections.FXCollections.observableArrayList(
+                    "Estilo por Defecto", "Estilo Oscuro",
+                    "Estilo Azul", "Estilo Verde", "Estilo Rosado"));
+    private final CustomMenuItem customItemEstilo = new CustomMenuItem(comboBoxEstilo);
+
     @FXML
     public void initialize() {
         // Pequeño delay para que la Scene esté lista antes de obtener el Stage.
@@ -71,6 +80,10 @@ public class MainGuiController {
             if (tabPaneFx.getScene() != null && tabPaneFx.getScene().getWindow() != null) {
                 stage = (Stage) tabPaneFx.getScene().getWindow();
             }
+            // Reaplicar el tema persistido (si hay) ahora que la Scene ya existe.
+            String estiloGuardado = userPrefs.get("ESTILOX", "Estilo por Defecto");
+            comboBoxEstilo.getSelectionModel().select(estiloGuardado);
+            aplicarEstilo(estiloGuardado);
         });
         pause.play();
         // Construir los menús según el perfil del usuario en sesión.
@@ -145,6 +158,13 @@ public class MainGuiController {
             }
         }
 
+        // Menú extra "Cambiar Estilo".
+        comboBoxEstilo.setOnAction(e -> cambiarEstilo());
+        customItemEstilo.setHideOnClick(false);
+        menuEstilo.getItems().clear();
+        menuEstilo.getItems().add(customItemEstilo);
+        menuBarFx.getMenus().addAll(menuEstilo);
+
         // Menú extra "Idioma".
         comboBoxIdioma.setOnAction(e -> cambiarIdioma());
         customItemIdioma.setHideOnClick(false);
@@ -153,6 +173,33 @@ public class MainGuiController {
         menuBarFx.getMenus().addAll(menuIdioma);
 
         bp.setTop(menuBarFx);
+    }
+
+    // Cambia el tema visual según la opción elegida en el ComboBox y lo persiste.
+    private void cambiarEstilo() {
+        String estilo = comboBoxEstilo.getSelectionModel().getSelectedItem();
+        if (estilo == null) return;
+        userPrefs.put("ESTILOX", estilo);
+        aplicarEstilo(estilo);
+    }
+
+    // Aplica el CSS correspondiente a la Scene actual. "Estilo por Defecto"
+    // simplemente limpia las hojas de estilo y deja la apariencia nativa.
+    private void aplicarEstilo(String estilo) {
+        Scene escena = bp.getScene();
+        if (escena == null) return;
+        escena.getStylesheets().clear();
+        String css = switch (estilo == null ? "" : estilo) {
+            case "Estilo Oscuro" -> "/css/estilo-oscuro.css";
+            case "Estilo Azul"   -> "/css/estilo-azul.css";
+            case "Estilo Verde"  -> "/css/estilo-verde.css";
+            case "Estilo Rosado" -> "/css/estilo-rosado.css";
+            default -> null;   // Estilo por Defecto
+        };
+        if (css != null) {
+            URL res = getClass().getResource(css);
+            if (res != null) escena.getStylesheets().add(res.toExternalForm());
+        }
     }
 
     // Guarda el idioma elegido y vuelve a pintar el MenuBar con las etiquetas nuevas.

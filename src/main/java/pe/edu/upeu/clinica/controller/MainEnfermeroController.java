@@ -8,17 +8,21 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Control;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.stage.Stage;
 import pe.edu.upeu.clinica.components.ColumnInfo;
+import pe.edu.upeu.clinica.components.FormValidator;
+import pe.edu.upeu.clinica.components.TableSearchFilter;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
 import pe.edu.upeu.clinica.model.Enfermero;
 import pe.edu.upeu.clinica.service.IEnfermeroService;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,12 +33,13 @@ public class MainEnfermeroController {
 
     private final IEnfermeroService service;
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    private final ObservableList<Enfermero> data = FXCollections.observableArrayList();
     private Enfermero seleccionado;       // null = modo Nuevo; != null = modo Editar
 
     // Campos FXML — todos los TextField se declaran en una línea para compacidad.
     @FXML private TextField txtDni, txtNombres, txtApellidos, txtTelefono;
     @FXML private TableView<Enfermero> tabla;
+    @FXML private TextField txtBuscar;      // búsqueda en vivo sobre la tabla
+    private TableSearchFilter<Enfermero> filtro;
 
     public MainEnfermeroController(IEnfermeroService service) { this.service = service; }
 
@@ -72,10 +77,16 @@ public class MainEnfermeroController {
             }
         });
         tabla.getColumns().add(0, colNum);
+
+        // Búsqueda en vivo: filtra por DNI, nombres, apellidos o teléfono.
+        filtro = new TableSearchFilter<>(txtBuscar, tabla, en ->
+                String.join(" ",
+                        en.getDni(), en.getNombres(), en.getApellidos(),
+                        en.getTelefono() == null ? "" : en.getTelefono()));
         cargar();
     }
 
-    private void cargar() { data.setAll(service.findAll()); tabla.setItems(data); }
+    private void cargar() { filtro.setData(service.findAll()); }
 
     @FXML public void onNuevo()   { seleccionado = null; onLimpiar(); }
     @FXML public void onLimpiar() { txtDni.clear(); txtNombres.clear(); txtApellidos.clear(); txtTelefono.clear(); }
@@ -89,7 +100,13 @@ public class MainEnfermeroController {
                 .apellidos(empty(txtApellidos.getText()))
                 .telefono(empty(txtTelefono.getText()))
                 .build();
-        Set<ConstraintViolation<Enfermero>> v = validator.validate(e);
+        // Validación Jakarta + marcado visual de cada campo con error (borde rojo + tooltip).
+        Map<String, Control> campos = new LinkedHashMap<>();
+        campos.put("dni", txtDni);
+        campos.put("nombres", txtNombres);
+        campos.put("apellidos", txtApellidos);
+        campos.put("telefono", txtTelefono);
+        Set<ConstraintViolation<Enfermero>> v = FormValidator.validar(validator, e, campos);
         if (!v.isEmpty()) {
             mostrarError(v.stream().map(x -> "• " + x.getMessage()).collect(Collectors.joining("\n")));
             return;

@@ -8,17 +8,21 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Control;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import pe.edu.upeu.clinica.components.ColumnInfo;
+import pe.edu.upeu.clinica.components.FormValidator;
+import pe.edu.upeu.clinica.components.TableSearchFilter;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
 import pe.edu.upeu.clinica.model.Especialidad;
 import pe.edu.upeu.clinica.service.IEspecialidadService;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,7 +34,6 @@ public class MainEspecialidadController {
     // Servicio + Jakarta Validator (singleton, reutiliza el motor).
     private final IEspecialidadService service;
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    private final ObservableList<Especialidad> data = FXCollections.observableArrayList();
 
     // null = modo "Nuevo"; != null = modo "Editando".
     private Especialidad seleccionada;
@@ -38,6 +41,8 @@ public class MainEspecialidadController {
     @FXML private TextField txtNombre;
     @FXML private TextArea  txtDescripcion;
     @FXML private TableView<Especialidad> tabla;
+    @FXML private TextField txtBuscar;      // búsqueda en vivo sobre la tabla
+    private TableSearchFilter<Especialidad> filtro;
 
     public MainEspecialidadController(IEspecialidadService service) {
         this.service = service;
@@ -46,6 +51,11 @@ public class MainEspecialidadController {
     @FXML
     public void initialize() {
         configurarTabla();
+        // Búsqueda en vivo: filtra por nombre o descripción.
+        filtro = new TableSearchFilter<>(txtBuscar, tabla, esp ->
+                String.join(" ",
+                        esp.getNombre() == null ? "" : esp.getNombre(),
+                        esp.getDescripcion() == null ? "" : esp.getDescripcion()));
         cargar();
     }
 
@@ -60,10 +70,9 @@ public class MainEspecialidadController {
         helper.addColumnsInOrderWithSize(tabla, cols, this::editar, this::confirmarEliminar);
     }
 
-    // Lee del servicio y refresca la tabla.
+    // Lee del servicio y refresca la tabla (respetando el filtro de búsqueda actual).
     private void cargar() {
-        data.setAll(service.findAll());
-        tabla.setItems(data);
+        filtro.setData(service.findAll());
     }
 
     // Botón "Nuevo" — resetea el modo y limpia el formulario.
@@ -80,8 +89,10 @@ public class MainEspecialidadController {
                 .nombre(empty(txtNombre.getText()))
                 .descripcion(empty(txtDescripcion.getText()))
                 .build();
-        // Validación: si hay violaciones, mostrar Toast rojo con todos los mensajes concatenados.
-        Set<ConstraintViolation<Especialidad>> v = validator.validate(e);
+        // Validación Jakarta + marcado visual del campo con error (borde rojo + tooltip).
+        Map<String, Control> campos = new LinkedHashMap<>();
+        campos.put("nombre", txtNombre);
+        Set<ConstraintViolation<Especialidad>> v = FormValidator.validar(validator, e, campos);
         if (!v.isEmpty()) {
             mostrarError(v.stream().map(x -> "• " + x.getMessage()).collect(Collectors.joining("\n")));
             return;

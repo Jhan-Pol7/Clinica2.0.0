@@ -9,11 +9,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.stage.Stage;
 import pe.edu.upeu.clinica.components.ColumnInfo;
+import pe.edu.upeu.clinica.components.FormValidator;
+import pe.edu.upeu.clinica.components.TableSearchFilter;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
 import pe.edu.upeu.clinica.model.Especialidad;
@@ -22,6 +25,7 @@ import pe.edu.upeu.clinica.service.IEspecialidadService;
 import pe.edu.upeu.clinica.service.IMedicoService;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,12 +36,13 @@ public class MainMedicoController {
     private final IMedicoService service;
     private final IEspecialidadService espService;  // necesario para alimentar cmbEspecialidad
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    private final ObservableList<Medico> data = FXCollections.observableArrayList();
     private Medico seleccionado;
 
     @FXML private TextField txtDni, txtNombres, txtApellidos, txtColeg, txtTelefono, txtEmail;
     @FXML private ComboBox<Especialidad> cmbEspecialidad;
     @FXML private TableView<Medico> tabla;
+    @FXML private TextField txtBuscar;      // búsqueda en vivo sobre la tabla
+    private TableSearchFilter<Medico> filtro;
 
     public MainMedicoController(IMedicoService service, IEspecialidadService espService) {
         this.service = service;
@@ -98,11 +103,19 @@ public class MainMedicoController {
             }
         });
         tabla.getColumns().add(0, colNum);
+
+        // Búsqueda en vivo: filtra por DNI, nombres, apellidos, colegiatura o especialidad.
+        filtro = new TableSearchFilter<>(txtBuscar, tabla, m ->
+                String.join(" ",
+                        m.getDni(), m.getNombres(), m.getApellidos(),
+                        m.getNumColegiatura() == null ? "" : m.getNumColegiatura(),
+                        m.getEspecialidad() == null ? "" : m.getEspecialidad().getNombre(),
+                        m.getTelefono() == null ? "" : m.getTelefono()));
         cargar();
     }
 
     // Refresca la tabla de médicos con la información más reciente de la BD.
-    private void cargar() { data.setAll(service.findAll()); tabla.setItems(data); }
+    private void cargar() { filtro.setData(service.findAll()); }
 
     // Vuelve a leer las especialidades de la BD y las pone en el ComboBox.
     private void recargarEspecialidades() {
@@ -127,7 +140,14 @@ public class MainMedicoController {
                 .email(empty(txtEmail.getText()))
                 .especialidad(cmbEspecialidad.getValue())
                 .build();
-        Set<ConstraintViolation<Medico>> v = validator.validate(m);
+        // Validación Jakarta + marcado visual de cada campo con error (borde rojo + tooltip).
+        Map<String, Control> campos = new LinkedHashMap<>();
+        campos.put("dni", txtDni);
+        campos.put("nombres", txtNombres);
+        campos.put("apellidos", txtApellidos);
+        campos.put("telefono", txtTelefono);
+        campos.put("especialidad", cmbEspecialidad);
+        Set<ConstraintViolation<Medico>> v = FormValidator.validar(validator, m, campos);
         if (!v.isEmpty()) {
             mostrarError(v.stream().map(x -> "• " + x.getMessage()).collect(Collectors.joining("\n")));
             return;

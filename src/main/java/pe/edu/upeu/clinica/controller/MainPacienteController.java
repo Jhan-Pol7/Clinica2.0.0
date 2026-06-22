@@ -11,10 +11,13 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Control;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.stage.Stage;
 import pe.edu.upeu.clinica.components.ColumnInfo;
+import pe.edu.upeu.clinica.components.FormValidator;
+import pe.edu.upeu.clinica.components.TableSearchFilter;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
 import pe.edu.upeu.clinica.enums.Sexo;
@@ -22,8 +25,8 @@ import pe.edu.upeu.clinica.model.Paciente;
 import pe.edu.upeu.clinica.service.IPacienteService;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 // CRUD de Paciente. Extiende el patrón estándar añadiendo búsqueda por DNI
@@ -33,13 +36,14 @@ public class MainPacienteController {
 
     private final IPacienteService service;
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    private final ObservableList<Paciente> data = FXCollections.observableArrayList();
     private Paciente seleccionado;          // null = modo Nuevo
 
     @FXML private TextField  txtDni, txtNombres, txtApellidos, txtTelefono, txtDireccion, txtEmail;
     @FXML private DatePicker dpFechaNac;
     @FXML private ComboBox<Sexo> cmbSexo;   // alimentado con Sexo.values() en initialize
     @FXML private TableView<Paciente> tabla;
+    @FXML private TextField txtBuscar;      // búsqueda en vivo sobre la tabla
+    private TableSearchFilter<Paciente> filtro;
 
     public MainPacienteController(IPacienteService service) { this.service = service; }
 
@@ -81,10 +85,17 @@ public class MainPacienteController {
             }
         });
         tabla.getColumns().add(0, colNum);
+
+        // Búsqueda en vivo: filtra por DNI, nombres, apellidos, teléfono o email.
+        filtro = new TableSearchFilter<>(txtBuscar, tabla, p ->
+                String.join(" ",
+                        p.getDni(), p.getNombres(), p.getApellidos(),
+                        p.getTelefono() == null ? "" : p.getTelefono(),
+                        p.getEmail() == null ? "" : p.getEmail()));
         cargar();
     }
 
-    private void cargar() { data.setAll(service.findAll()); tabla.setItems(data); }
+    private void cargar() { filtro.setData(service.findAll()); }
 
     @FXML public void onNuevo()   { seleccionado = null; onLimpiar(); }
     @FXML public void onLimpiar() {
@@ -115,7 +126,13 @@ public class MainPacienteController {
                 .direccion(empty(txtDireccion.getText()))
                 .email(empty(txtEmail.getText()))
                 .build();
-        Set<ConstraintViolation<Paciente>> v = validator.validate(p);
+        // Validación Jakarta + marcado visual de cada campo con error (borde rojo + tooltip).
+        Map<String, Control> campos = new LinkedHashMap<>();
+        campos.put("dni", txtDni);
+        campos.put("nombres", txtNombres);
+        campos.put("apellidos", txtApellidos);
+        campos.put("telefono", txtTelefono);
+        Set<ConstraintViolation<Paciente>> v = FormValidator.validar(validator, p, campos);
         if (!v.isEmpty()) {
             mostrarError(v.stream().map(x -> "• " + x.getMessage()).collect(Collectors.joining("\n")));
             return;

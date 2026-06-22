@@ -13,9 +13,11 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.stage.Stage;
+import pe.edu.upeu.clinica.components.AutoCompleteTextField;
 import pe.edu.upeu.clinica.components.ColumnInfo;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
+import pe.edu.upeu.clinica.dto.ModeloDataAutocomplet;
 import pe.edu.upeu.clinica.dto.SessionManager;
 import pe.edu.upeu.clinica.enums.TipoAtencion;
 import pe.edu.upeu.clinica.model.Cita;
@@ -32,7 +34,10 @@ import pe.edu.upeu.clinica.service.IPacienteService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Vista estrella de Recepción: registrar cita + emisión de ticket.
@@ -52,6 +57,11 @@ public class MainCitaController {
 
     private final ObservableList<Cita> data = FXCollections.observableArrayList();
     private Paciente pacienteSeleccionado;
+
+    // Autocompletado del campo DNI: catálogo de pacientes ordenado por DNI.
+    private final SortedSet<ModeloDataAutocomplet> entriesPaciente =
+            new TreeSet<>(Comparator.comparing(Object::toString));
+    private AutoCompleteTextField<ModeloDataAutocomplet> autoCompDni;
 
     @FXML private TextField  txtDni, txtNombres, txtApellidos, txtTelefono;
     @FXML private Spinner<Integer> spnHoraH, spnHoraM;  // Spinners para hora (0-23) y minutos (0-59)
@@ -77,11 +87,20 @@ public class MainCitaController {
 
     @FXML
     public void initialize() {
-        // El DNI solo permite escribir hasta 8 dígitos numéricos.
-        txtDni.setTextFormatter(new TextFormatter<>(cambio -> {
-            String nuevoTexto = cambio.getControlNewText();
-            return nuevoTexto.matches("\\d{0,8}") ? cambio : null;
-        }));
+        // Autocompletado del DNI: al escribir (p. ej. "60") se despliega un menú con
+        // los pacientes cuyo DNI o nombre coincide; al elegir uno se rellena el formulario.
+        cargarEntradasPaciente();
+        autoCompDni = new AutoCompleteTextField<>(entriesPaciente, txtDni);
+        // Detecta cuándo el usuario eligió una sugerencia: el componente escribe el
+        // toString() del ítem en el campo; ahí cargamos ese paciente y dejamos solo el DNI.
+        txtDni.textProperty().addListener((obs, anterior, actual) -> {
+            ModeloDataAutocomplet sel = autoCompDni.getLastSelectedObject();
+            if (sel != null && actual != null && actual.equals(sel.toString())) {
+                pacienteService.findByDni(sel.getIdx()).ifPresent(this::seleccionarPaciente);
+            }
+        });
+        // Refresca el catálogo al enfocar el campo, para incluir pacientes recién registrados.
+        txtDni.focusedProperty().addListener((o, perdio, gano) -> { if (gano) cargarEntradasPaciente(); });
 
         // Configura los Spinners de hora: horas 0-23 (inicia en 8) y minutos 0-59 (paso de 5).
         // wrapAround=true hace que al pasar de 23 vuelva a 0 (más fácil para el usuario).
@@ -141,15 +160,35 @@ public class MainCitaController {
         String dni = empty(txtDni.getText());
         if (dni.isEmpty()) { mostrarError("Ingresa un DNI"); return; }
         pacienteService.findByDni(dni).ifPresentOrElse(p -> {
-            pacienteSeleccionado = p;
-            txtNombres.setText(p.getNombres());
-            txtApellidos.setText(p.getApellidos());
-            txtTelefono.setText(p.getTelefono() == null ? "" : p.getTelefono());
+            seleccionarPaciente(p);
             mostrarExito("Paciente encontrado: " + p.getNombres() + " " + p.getApellidos());
         }, () -> {
             pacienteSeleccionado = null;
             mostrarError("No existe paciente con DNI " + dni + ". Regístralo en Personas → Pacientes");
         });
+    }
+
+    // Construye el catálogo de autocompletado a partir de todos los pacientes:
+    // idx = DNI, nameDysplay = "nombres apellidos", otherData = teléfono.
+    private void cargarEntradasPaciente() {
+        entriesPaciente.clear();
+        for (Paciente p : pacienteService.findAll()) {
+            ModeloDataAutocomplet m = new ModeloDataAutocomplet();
+            m.setIdx(p.getDni());
+            m.setNameDysplay(p.getNombres() + " " + p.getApellidos());
+            m.setOtherData(p.getTelefono() == null ? "" : p.getTelefono());
+            entriesPaciente.add(m);
+        }
+    }
+
+    // Rellena el formulario con los datos del paciente y lo marca como seleccionado.
+    // Deja en txtDni únicamente el DNI (no el texto "DNI - Nombre" del autocompletado).
+    private void seleccionarPaciente(Paciente p) {
+        pacienteSeleccionado = p;
+        txtDni.setText(p.getDni());
+        txtNombres.setText(p.getNombres());
+        txtApellidos.setText(p.getApellidos());
+        txtTelefono.setText(p.getTelefono() == null ? "" : p.getTelefono());
     }
 
     @FXML

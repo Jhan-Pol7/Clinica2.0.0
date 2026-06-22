@@ -53,6 +53,9 @@
       <Button onAction="#onLimpiar"   text="Limpiar"/>
    </HBox>
 
-   <Label style="-fx-font-weight: bold;" text="Enfermeros registrados:"/>
+   <HBox alignment="CENTER_LEFT" spacing="8.0">
+      <Label style="-fx-font-weight: bold;" text="Enfermeros registrados:"/>
+      <TextField fx:id="txtBuscar" promptText="Buscar por DNI, nombres, apellidos..." prefWidth="320.0" HBox.hgrow="ALWAYS"/>
+   </HBox>
    <TableView fx:id="tabla" prefHeight="340.0"/>
 </VBox>

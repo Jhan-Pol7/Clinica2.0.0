@@ -2,6 +2,7 @@ package pe.edu.upeu.clinica.config;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.h2.tools.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +24,7 @@ public class DatabaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseConfig.class);
     private static HikariDataSource dataSource;
+    private static Server h2Server;   // servidor TCP de H2 (null si está deshabilitado)
 
     // Constructor privado: esta clase es de tipo utilidad estática.
     private DatabaseConfig() {}
@@ -34,6 +36,37 @@ public class DatabaseConfig {
             return;
         }
         Properties props = loadProperties("application.properties");
+
+        // Si está habilitado, levanta un servidor H2 TCP en un puerto fijo ANTES
+        // de crear el pool. Esto permite que clientes externos (DBeaver) se
+        // conecten a la misma base de datos mientras la aplicación está en uso.
+        boolean h2ServerEnabled = Boolean.parseBoolean(props.getProperty("db.h2server.enabled", "false"));
+        if (h2ServerEnabled) {
+            String port = props.getProperty("db.h2server.port", "9092");
+            boolean allowOthers = Boolean.parseBoolean(props.getProperty("db.h2server.allowOthers", "true"));
+            try {
+                java.util.List<String> args = new java.util.ArrayList<>();
+                args.add("-tcp");
+                args.add("-tcpPort");
+                args.add(port);
+                if (allowOthers) args.add("-tcpAllowOthers");
+                // Permite crear la BD si aún no existe (H2 lo bloquea por defecto en
+                // conexiones por servidor desde la versión 1.4.198 por seguridad).
+                args.add("-ifNotExists");
+                h2Server = Server.createTcpServer(args.toArray(new String[0])).start();
+                log.info("Servidor H2 TCP iniciado en el puerto {} (DBeaver puede conectarse)", port);
+            } catch (SQLException e) {
+                // Si el puerto ya está ocupado, asumimos que otra instancia de la app
+                // (o un servidor previo) ya tiene H2 escuchando en ese puerto: en vez de
+                // abortar el arranque, continuamos y nos conectamos a ese servidor.
+                String msg = e.getMessage();
+                if (msg != null && (msg.contains("port may be in use") || msg.contains("Address already in use"))) {
+                    log.warn("El puerto {} ya está en uso; se reutilizará el servidor H2 existente.", port);
+                } else {
+                    throw new RuntimeException("No se pudo iniciar el servidor H2 TCP en el puerto " + port, e);
+                }
+            }
+        }
 
         // Configura HikariCP con los valores leídos de application.properties.
         HikariConfig config = new HikariConfig();
@@ -121,6 +154,10 @@ public class DatabaseConfig {
         if (dataSource != null && !dataSource.isClosed()) {
             log.info("Cerrando HikariCP pool...");
             dataSource.close();
+        }
+        if (h2Server != null && h2Server.isRunning(false)) {
+            log.info("Deteniendo servidor H2 TCP...");
+            h2Server.stop();
         }
     }
 
