@@ -87,8 +87,8 @@
                <TextField fx:id="txtDur"   promptText="5 días"            GridPane.rowIndex="1" GridPane.columnIndex="3"/>
                <TextField fx:id="txtVia"   promptText="VO"                GridPane.rowIndex="1" GridPane.columnIndex="4"/>
                <HBox spacing="6.0" GridPane.rowIndex="1" GridPane.columnIndex="5">
-                  <Button onAction="#onAgregarMedicamento" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-weight: bold;"  text="+ Agregar"/>
-                  <Button onAction="#onQuitarMedicamento"  style="-fx-background-color: #E74C3C; -fx-text-fill: white; -fx-font-weight: bold;" text="− Quitar"/>
+                  <Button fx:id="btnAgregar" onAction="#onAgregarMedicamento" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-weight: bold;"  text="+ Agregar"/>
+                  <Button fx:id="btnQuitar" onAction="#onQuitarMedicamento"  style="-fx-background-color: #E74C3C; -fx-text-fill: white; -fx-font-weight: bold;" text="− Quitar"/>
                </HBox>
             </GridPane>
             <TableView fx:id="tablaDetalles" prefHeight="150.0"/>
@@ -114,7 +114,7 @@
    </TitledPane>
 
    <HBox spacing="8.0">
-      <Button onAction="#onFinalizarConsulta" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-weight: bold;" text="Finalizar Consulta"/>
+      <Button fx:id="btnFinalizar" onAction="#onFinalizarConsulta" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-weight: bold;" text="Finalizar Consulta"/>
       <Button onAction="#onLimpiar" text="Limpiar"/>
    </HBox>
 </VBox>

@@ -3,6 +3,9 @@ package pe.edu.upeu.clinica.controller;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -50,6 +53,7 @@ public class MainConsultaController {
     @FXML private TextArea txtSintomas, txtDiagnostico, txtObservaciones, txtExamenes,
                             txtIndicaciones, txtRecomendaciones;
     @FXML private TextField txtMed, txtDosis, txtFrec, txtDur, txtVia;
+    @FXML private Button btnAgregar, btnQuitar, btnFinalizar;   // se habilitan al seleccionar una cita
 
     public MainConsultaController(IConsultaService consultaService,
                                   ITriajeService triajeService,
@@ -101,12 +105,25 @@ public class MainConsultaController {
         tabla.setItems(citasData);
         limpiarFormulario();
         citaSeleccionada = null;
-        if (lblPaciente != null)      lblPaciente.setText("Selecciona una cita de la tabla →");
+        // Formulario bloqueado hasta que el médico pulse el botón verde (✎) de una cita.
+        setFormularioHabilitado(false);
+        if (lblPaciente != null)      lblPaciente.setText("Selecciona una cita con el botón verde ✎ →");
         if (lblSignosVitales != null) lblSignosVitales.setText("");
+    }
+
+    // Habilita/deshabilita todos los campos y botones del formulario de consulta.
+    // Solo se permite escribir tras seleccionar una cita (botón verde de la tabla).
+    private void setFormularioHabilitado(boolean activo) {
+        Control[] campos = { txtSintomas, txtDiagnostico, txtObservaciones, txtExamenes,
+                txtIndicaciones, txtRecomendaciones, txtMed, txtDosis, txtFrec, txtDur, txtVia,
+                tablaDetalles, btnAgregar, btnQuitar, btnFinalizar };
+        for (Control c : campos) if (c != null) c.setDisable(!activo);
     }
 
     private void seleccionar(Cita c) {
         citaSeleccionada = c;
+        // Al elegir la cita con el botón verde se habilita el formulario para escribir.
+        setFormularioHabilitado(true);
         if (lblPaciente != null) {
             lblPaciente.setText("Paciente: " + c.getPaciente().getNombres() + " " + c.getPaciente().getApellidos()
                     + " (DNI " + c.getPaciente().getDni() + ")  —  Ticket: " + c.getNumTicket());
@@ -179,8 +196,43 @@ public class MainConsultaController {
             Consulta saved = consultaService.guardarConsulta(c, r);
             SessionManager.getInstance().setLastConsulta(saved);
             mostrarExito("Consulta finalizada — cita " + citaSeleccionada.getNumTicket() + " marcada ATENDIDA");
+            // Mostrar la receta recién generada para que el médico la vea sin salir de la pantalla.
+            mostrarRecetaPopup(saved, c.getDiagnostico(), r);
             recargar();
         } catch (Exception ex) { mostrarError(ex.getMessage()); }
+    }
+
+    // Muestra en un cuadro de diálogo el resumen de la receta recién emitida
+    // (diagnóstico, medicamentos, indicaciones). Si no hubo receta, lo informa.
+    private void mostrarRecetaPopup(Consulta consulta, String diagnostico, Receta receta) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Diagnóstico: ").append(diagnostico == null || diagnostico.isEmpty() ? "—" : diagnostico).append("\n\n");
+        if (receta == null) {
+            sb.append("La consulta se cerró SIN receta (no se prescribió medicación).");
+        } else {
+            sb.append("MEDICAMENTOS:\n");
+            if (detallesData.isEmpty()) {
+                sb.append("  (sin medicamentos)\n");
+            } else {
+                for (RecetaDetalle d : detallesData) {
+                    sb.append("  • ").append(d.getMedicamento())
+                            .append("  ").append(d.getDosis())
+                            .append(" | ").append(d.getFrecuencia())
+                            .append(" | ").append(d.getDuracion())
+                            .append(" | ").append(d.getVia()).append("\n");
+                }
+            }
+            if (receta.getIndicacionesGenerales() != null && !receta.getIndicacionesGenerales().isEmpty())
+                sb.append("\nIndicaciones: ").append(receta.getIndicacionesGenerales());
+            if (receta.getRecomendaciones() != null && !receta.getRecomendaciones().isEmpty())
+                sb.append("\nRecomendaciones: ").append(receta.getRecomendaciones());
+        }
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle("Receta médica");
+        a.setHeaderText("Receta de la cita " + consulta.getCita().getNumTicket());
+        a.setContentText(sb.toString());
+        a.getDialogPane().setMinWidth(480);
+        a.showAndWait();
     }
 
     @FXML

@@ -5,6 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.util.Callback;
@@ -71,10 +72,12 @@ public class TableViewHelper<T> {
             @Override
             public TableCell<T, Void> call(final TableColumn<T, Void> param) {
                 return new TableCell<>() {
-                    private final Button btnUpdate = new Button("Editar");
+                    // Botón de editar: solo verde con ícono de lápiz (sin la palabra "Editar").
+                    private final Button btnUpdate = new Button("✎");
                     private final Button btnDelete = new Button("Eliminar");
                     {
-                        btnUpdate.setStyle("-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 3 8 3 8;");
+                        btnUpdate.setStyle("-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 3 10 3 10;");
+                        btnUpdate.setTooltip(new Tooltip("Editar"));
                         btnDelete.setStyle("-fx-background-color: #E74C3C; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 3 8 3 8;");
                         btnUpdate.setOnAction(event -> {
                             T data = getTableView().getItems().get(getIndex());
