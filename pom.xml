@@ -123,6 +123,17 @@
       <artifactId>escpos-coffee</artifactId>
       <version>4.1.0</version>
     </dependency>
+    <!-- ZXing — generación de códigos QR para los tickets -->
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>core</artifactId>
+      <version>3.5.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>javase</artifactId>
+      <version>3.5.3</version>
+    </dependency>
     <!-- Logging -->
     <dependency>
       <groupId>ch.qos.logback</groupId>

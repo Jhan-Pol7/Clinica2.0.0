@@ -29,7 +29,7 @@ public class RecetaPrinter {
                     .setJustification(EscPosConst.Justification.Left_Default);
 
             // Cabecera
-            escpos.writeLF(titulo, "CLÍNICA MÁS CERCA DE DIOS");
+            escpos.writeLF(titulo, "CLINICA MAS CERCA DE DIOS");
             escpos.writeLF(centro, "----------------------------------------");
             escpos.writeLF(titulo, "RECETA MÉDICA");
             escpos.writeLF(centro, "----------------------------------------");

@@ -87,6 +87,9 @@ public class ReporteServiceImp implements IReporteService {
         params.put("hora",            t.getHora()  == null ? "" : t.getHora().format(TIME_F));
         params.put("turno",           t.getTurno() == null ? null : String.valueOf(t.getTurno()));
         params.put("tipoAtencion",    t.getTipoAtencion());
+        // Imagen QR con los datos de la cita (escaneable desde el ticket impreso/PDF).
+        params.put("qr", pe.edu.upeu.clinica.utils.QrGenerator.generar(
+                ticketService.buildQrContent(t), 150));
 
         try {
             // JREmptyDataSource = 1 fila vacía, suficiente para que el banner se renderice una vez.

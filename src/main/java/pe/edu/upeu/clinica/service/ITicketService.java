@@ -13,4 +13,9 @@ public interface ITicketService {
     // Renderiza el ticket como texto ASCII monoespaciado (80mm).
     // Es el fallback que se muestra en pantalla si Jasper no está disponible.
     String renderText(Ticket ticket);
+
+    // Arma el contenido legible que se codifica en el QR del ticket.
+    // Al escanearlo se muestran los datos de la cita (ticket, paciente, DNI,
+    // fecha/hora, médico, especialidad) en texto plano.
+    String buildQrContent(Ticket ticket);
 }

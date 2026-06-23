@@ -18,9 +18,10 @@
     <parameter name="hora"           class="java.lang.String"/>
     <parameter name="turno"          class="java.lang.String"/>
     <parameter name="tipoAtencion"   class="java.lang.String"/>
+    <parameter name="qr"             class="java.awt.Image"/>
 
     <title>
-        <band height="280" splitType="Stretch">
+        <band height="460" splitType="Stretch">
             <staticText>
                 <reportElement x="0" y="0" width="200" height="14"/>
                 <textElement textAlignment="Center"><font fontName="Monospaced" size="9"/></textElement>
@@ -108,18 +109,35 @@
                 <textElement textAlignment="Center"><font fontName="Monospaced" size="8"/></textElement>
                 <text><![CDATA[----------------------------------------]]></text>
             </staticText>
+
+            <!-- Código QR con los datos de la cita (centrado, 150x150) -->
+            <image scaleImage="RetainShape" hAlign="Center" isUsingCache="false">
+                <reportElement x="25" y="230" width="150" height="150"/>
+                <imageExpression><![CDATA[$P{qr}]]></imageExpression>
+            </image>
             <staticText>
-                <reportElement x="0" y="228" width="200" height="12"/>
+                <reportElement x="0" y="382" width="200" height="12"/>
+                <textElement textAlignment="Center"><font fontName="Monospaced" size="8"/></textElement>
+                <text><![CDATA[Escanea para ver tu cita]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="0" y="396" width="200" height="12"/>
+                <textElement textAlignment="Center"><font fontName="Monospaced" size="8"/></textElement>
+                <text><![CDATA[----------------------------------------]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="408" width="200" height="12"/>
                 <textElement textAlignment="Center"><font fontName="Monospaced" size="9"/></textElement>
                 <text><![CDATA[Gracias por su preferencia]]></text>
             </staticText>
             <staticText>
-                <reportElement x="0" y="240" width="200" height="12"/>
+                <reportElement x="0" y="420" width="200" height="12"/>
                 <textElement textAlignment="Center"><font fontName="Monospaced" size="9"/></textElement>
                 <text><![CDATA[Conserve este ticket]]></text>
             </staticText>
             <staticText>
-                <reportElement x="0" y="254" width="200" height="14"/>
+                <reportElement x="0" y="434" width="200" height="14"/>
                 <textElement textAlignment="Center"><font fontName="Monospaced" size="9"/></textElement>
                 <text><![CDATA[========================================]]></text>
             </staticText>

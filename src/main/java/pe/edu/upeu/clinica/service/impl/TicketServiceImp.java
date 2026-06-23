@@ -85,6 +85,22 @@ public class TicketServiceImp implements ITicketService {
         return sb.toString();
     }
 
+    @Override
+    public String buildQrContent(Ticket t) {
+        // Texto plano y compacto: al escanear el QR se ven los datos de la cita.
+        StringBuilder sb = new StringBuilder();
+        sb.append(t.getEmisor() == null ? "CLINICA MAS CERCA DE DIOS"
+                : t.getEmisor().getNombreComercial()).append("\n");
+        sb.append("Ticket: ").append(n(t.getNumTicket())).append("\n");
+        sb.append("Paciente: ").append(n(t.getPacienteNombre())).append("\n");
+        sb.append("DNI: ").append(n(t.getPacienteDni())).append("\n");
+        sb.append("Fecha: ").append(t.getFecha() == null ? "" : t.getFecha().format(DATE));
+        sb.append("  Hora: ").append(t.getHora() == null ? "" : t.getHora().format(TIME)).append("\n");
+        sb.append("Medico: ").append(n(t.getMedico())).append("\n");
+        sb.append("Especialidad: ").append(n(t.getEspecialidad()));
+        return sb.toString();
+    }
+
     // Null-safe para evitar "null" literal en el output.
     private String n(String s) { return s == null ? "" : s; }
 }

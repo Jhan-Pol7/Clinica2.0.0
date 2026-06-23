@@ -8,9 +8,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.scene.control.Control;
 import pe.edu.upeu.clinica.components.ColumnInfo;
 import pe.edu.upeu.clinica.components.TableViewHelper;
 import pe.edu.upeu.clinica.components.Toast;
+import pe.edu.upeu.clinica.components.ToltipCustom;
 import pe.edu.upeu.clinica.dto.SessionManager;
 import pe.edu.upeu.clinica.enums.EstadoCita;
 import pe.edu.upeu.clinica.model.Cita;
@@ -20,7 +22,9 @@ import pe.edu.upeu.clinica.repository.EnfermeroRepository;
 import pe.edu.upeu.clinica.service.ICitaService;
 import pe.edu.upeu.clinica.service.ITriajeService;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Enfermería: cita en EN_ESPERA → registrar signos vitales → EN_CONSULTA.
@@ -86,6 +90,12 @@ public class MainTriajeController {
     // Guarda el triaje (signos vitales) y pasa la cita al estado EN_CONSULTA.
     public void onGuardarTriaje() {
         if (citaSeleccionada == null) { mostrarError("Selecciona una cita en la tabla"); return; }
+
+        // VALIDACIÓN OBLIGATORIA: los 6 signos vitales deben estar completos.
+        // Sin ellos no se guarda el triaje y, por tanto, la cita NO avanza a
+        // EN_CONSULTA (no se podrá atender al paciente). Marca en rojo los vacíos.
+        if (!validarSignosObligatorios()) return;
+
         // Parsea todos los signos vitales. Si alguno tiene formato inválido, se aborta.
         Double sis, dia, temp, peso, talla; Integer fc;
         try {
@@ -133,6 +143,48 @@ public class MainTriajeController {
         txtSistolica.clear(); txtDiastolica.clear(); txtTemperatura.clear();
         txtFrecCard.clear(); txtPeso.clear(); txtTalla.clear();
         txtMotivo.clear(); txtObservaciones.clear();
+        limpiarMarcas();
+    }
+
+    // Componente de marcado visual (borde rojo + tooltip) reutilizado de los CRUDs.
+    private final ToltipCustom ttc = new ToltipCustom();
+
+    // Verifica que los 6 signos vitales estén completos. Si falta alguno, lo
+    // marca en rojo y muestra un Toast con la lista de campos faltantes.
+    // Devuelve true solo si TODOS están completos.
+    private boolean validarSignosObligatorios() {
+        limpiarMarcas();
+        // Mapa campo -> etiqueta legible, en orden de aparición en el formulario.
+        LinkedHashMap<Control, String> obligatorios = new LinkedHashMap<>();
+        obligatorios.put(txtSistolica,   "Presión sistólica");
+        obligatorios.put(txtDiastolica,  "Presión diastólica");
+        obligatorios.put(txtTemperatura, "Temperatura");
+        obligatorios.put(txtFrecCard,    "Frecuencia cardíaca");
+        obligatorios.put(txtPeso,        "Peso");
+        obligatorios.put(txtTalla,       "Talla");
+
+        List<String> faltantes = new ArrayList<>();
+        obligatorios.forEach((campo, etiqueta) -> {
+            String valor = ((TextField) campo).getText();
+            if (valor == null || valor.trim().isEmpty()) {
+                ttc.marcarError(campo, etiqueta + " es obligatorio");
+                faltantes.add(etiqueta);
+            }
+        });
+
+        if (!faltantes.isEmpty()) {
+            mostrarError("Completa los signos vitales antes de pasar a consulta:\n• "
+                    + String.join("\n• ", faltantes));
+            return false;
+        }
+        return true;
+    }
+
+    // Restaura el aspecto normal de los 6 campos de signos vitales.
+    private void limpiarMarcas() {
+        ttc.limpiarCampo(txtSistolica);   ttc.limpiarCampo(txtDiastolica);
+        ttc.limpiarCampo(txtTemperatura); ttc.limpiarCampo(txtFrecCard);
+        ttc.limpiarCampo(txtPeso);        ttc.limpiarCampo(txtTalla);
     }
 
     // Convierte un texto a Double aceptando coma o punto como separador decimal.

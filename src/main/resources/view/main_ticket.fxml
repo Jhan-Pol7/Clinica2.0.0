@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.VBox?>
@@ -16,6 +17,13 @@
    <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Ver e Imprimir"/>
    <Label fx:id="lblSeleccion" style="-fx-font-size: 13px; -fx-text-fill: #5dade2;"
           text="Selecciona una fila de la tabla Citas o Recetas y usa los botones de abajo."/>
+
+   <!-- Buscador por DNI -->
+   <HBox alignment="CENTER_LEFT" spacing="8.0">
+      <Label style="-fx-font-weight: bold;" text="Buscar por DNI:"/>
+      <TextField fx:id="txtBuscarDni" promptText="Ingresa DNI del paciente..." prefWidth="250.0" HBox.hgrow="ALWAYS"/>
+      <Button onAction="#onLimpiarBusqueda" text="Limpiar"/>
+   </HBox>
 
    <HBox spacing="14.0" VBox.vgrow="ALWAYS">
 
@@ -30,7 +38,6 @@
                <TableColumn fx:id="colCitaHora"      text="Hora"        prefWidth="60"/>
                <TableColumn fx:id="colCitaEstado"    text="Estado"      prefWidth="110"/>
             </columns>
-            <VBox.vgrow><javafx.scene.layout.Priority fx:constant="ALWAYS"/></VBox.vgrow>
          </TableView>
       </VBox>
 
@@ -44,14 +51,13 @@
                <TableColumn fx:id="colRecetaDx"        text="Diagnóstico" prefWidth="160"/>
                <TableColumn fx:id="colRecetaFecha"     text="Fecha"       prefWidth="120"/>
             </columns>
-            <VBox.vgrow><javafx.scene.layout.Priority fx:constant="ALWAYS"/></VBox.vgrow>
          </TableView>
       </VBox>
 
    </HBox>
 
-   <!-- Botones de acción -->
-   <HBox spacing="8.0">
+   <!-- Botones de acción (siempre visibles, no crecen) -->
+   <HBox spacing="8.0" minHeight="40.0" VBox.vgrow="NEVER">
       <Button onAction="#onRecargar"     text="Recargar"/>
       <Button onAction="#onImprimir"     style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" text="Imprimir (ESC/POS)"/>
       <Button onAction="#onVisorJasper"  style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-font-weight: bold;" text="Visor Jasper"/>

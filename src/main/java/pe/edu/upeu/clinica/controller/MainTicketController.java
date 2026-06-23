@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -64,10 +65,16 @@ public class MainTicketController {
     @FXML private TableColumn<Receta, String> colRecetaDx;
     @FXML private TableColumn<Receta, String> colRecetaFecha;
 
+    // ── FXML — Búsqueda ───────────────────────────────────────
+    @FXML private TextField txtBuscarDni;
     @FXML private Label lblSeleccion;
 
     private final ObservableList<Cita>   citas   = FXCollections.observableArrayList();
     private final ObservableList<Receta> recetas = FXCollections.observableArrayList();
+
+    // ── Filtros de búsqueda por DNI ────────────────────────────
+    private pe.edu.upeu.clinica.components.TableSearchFilter<Cita> filtroCitas;
+    private pe.edu.upeu.clinica.components.TableSearchFilter<Receta> filtroRecetas;
 
     public MainTicketController(ITicketService ticketService, IRecetaService recetaService,
                                 ICitaService citaService, IConsultaService consultaService,
@@ -83,6 +90,23 @@ public class MainTicketController {
     public void initialize() {
         configurarTablaCitas();
         configurarTablaRecetas();
+
+        // Inicializar filtros de búsqueda por DNI del paciente
+        filtroCitas = new pe.edu.upeu.clinica.components.TableSearchFilter<>(
+                txtBuscarDni, tablaCitas,
+                c -> c.getPaciente() == null ? "" : c.getPaciente().getDni()
+        );
+        filtroRecetas = new pe.edu.upeu.clinica.components.TableSearchFilter<>(
+                txtBuscarDni, tablaRecetas,
+                r -> {
+                    if (r.getConsulta() == null || r.getConsulta().getCita() == null
+                            || r.getConsulta().getCita().getPaciente() == null) {
+                        return "";
+                    }
+                    return r.getConsulta().getCita().getPaciente().getDni();
+                }
+        );
+
         cargarDatos();
     }
 
@@ -167,10 +191,15 @@ public class MainTicketController {
     @FXML
     public void onRecargar() { cargarDatos(); }
 
+    @FXML
+    public void onLimpiarBusqueda() {
+        txtBuscarDni.clear();
+    }
+
     private void cargarDatos() {
         // Citas del día (ya vienen con paciente/médico hidratados por findByFecha).
         List<Cita> todasCitas = citaService.findByFecha(LocalDate.now());
-        citas.setAll(todasCitas);
+        filtroCitas.setData(todasCitas);
 
         // Recetas: el findAll() solo trae el idConsulta. Enriquecemos cada receta
         // con su consulta completa (idCita + diagnóstico) y la cita completa
@@ -179,7 +208,7 @@ public class MainTicketController {
         for (Receta r : todasRecetas) {
             enriquecerReceta(r);
         }
-        recetas.setAll(todasRecetas);
+        filtroRecetas.setData(todasRecetas);
 
         lblSeleccion.setText("Selecciona una fila de la tabla Citas o Recetas y usa los botones de abajo.");
     }
@@ -221,7 +250,7 @@ public class MainTicketController {
     private void imprimirCita(Cita cita) {
         try {
             Ticket t = ticketService.buildTicket(cita);
-            new TicketPrinter().imprimir(t);
+            new TicketPrinter().imprimir(t, ticketService.buildQrContent(t));
             mostrarExito("Ticket de cita enviado a la impresora térmica");
         } catch (IOException ex) {
             mostrarError("Sin impresora ESC/POS — usa 'Visor Jasper' o 'PDF' como alternativa");

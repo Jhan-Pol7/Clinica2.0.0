@@ -3,6 +3,7 @@ package pe.edu.upeu.clinica.utils;
 import com.github.anastaciocintra.escpos.EscPos;
 import com.github.anastaciocintra.escpos.EscPosConst;
 import com.github.anastaciocintra.escpos.Style;
+import com.github.anastaciocintra.escpos.barcode.QRCode;
 import com.github.anastaciocintra.output.PrinterOutputStream;
 import pe.edu.upeu.clinica.model.Ticket;
 
@@ -19,7 +20,9 @@ public class TicketPrinter {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     // Envía el ticket a la impresora térmica usando el protocolo ESC/POS.
-    public void imprimir(Ticket t) throws IOException {
+    // qrContent: texto que se codifica en el QR (datos de la cita). Si es null
+    // o vacío, simplemente no se imprime el QR.
+    public void imprimir(Ticket t, String qrContent) throws IOException {
         PrinterManager pm = PrinterManager.getInstance();
         try (EscPos escpos = new EscPos(new PrinterOutputStream(pm.getPrintService()))) {
             // Estilos: negrita+centrado para títulos, centrado normal y alineado a la izquierda.
@@ -49,6 +52,17 @@ public class TicketPrinter {
             escpos.writeLF(izq, "Turno       : N° " + t.getTurno());
             escpos.writeLF(izq, "Tipo Atenc. : " + t.getTipoAtencion());
             escpos.writeLF(centro, "----------------------------------------");
+
+            // Código QR centrado con los datos de la cita (escaneable).
+            if (qrContent != null && !qrContent.isBlank()) {
+                QRCode qrcode = new QRCode();
+                qrcode.setSize(5);                                   // módulo 5 px (tamaño legible en 80mm)
+                qrcode.setJustification(EscPosConst.Justification.Center);
+                escpos.write(qrcode, qrContent);
+                escpos.writeLF(centro, "Escanea para ver tu cita");
+                escpos.writeLF(centro, "----------------------------------------");
+            }
+
             escpos.writeLF(centro, "Gracias por su preferencia");
             escpos.writeLF(centro, "Conserve este ticket");
             escpos.writeLF(centro, "========================================");
